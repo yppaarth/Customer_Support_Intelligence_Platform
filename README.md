@@ -31,6 +31,7 @@ flowchart LR
 - Controlled tool registry for customer/order/subscription/refund approval workflows with schema validation and audit records.
 - Evaluation dataset and CLI that writes actual report JSON from deterministic checks.
 - React/Vite/Tailwind frontend with login, inbox, detail, knowledge, escalations, analytics, evaluation, user/admin, settings, audit, not-found, and access-denied pages.
+- Ticket import from JSON/CSV, document ingestion from typed text or constrained text/Markdown/HTML uploads, document archive, settings updates, and audit inspection.
 - Docker Compose for Postgres, Redis, API, worker, and frontend. AWS Terraform skeleton for ECS/RDS/ElastiCache/S3/CloudWatch architecture.
 - CI workflow for backend and frontend checks.
 
@@ -63,12 +64,33 @@ cd apps/api
 pytest
 ```
 
+Current backend check result: `8 passed`.
+
 Run the deterministic evaluation suite:
 
 ```bash
 cd apps/api
 python -m app.ai.evaluation.runner --dataset ../../evaluation/datasets/synthetic_support_cases.json --output ../../evaluation/reports/latest.json
 ```
+
+Latest deterministic evaluation report: 105 synthetic cases, 85.7% classification accuracy, 85.7% escalation accuracy. These are actual local results, not claimed production metrics.
+
+Build the frontend:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+Production dependency audit:
+
+```bash
+cd frontend
+npm audit --omit=dev
+```
+
+Current result: `found 0 vulnerabilities`.
 
 ## Local Development Without Docker
 
@@ -89,8 +111,10 @@ npm run dev
 ## Current Limitations
 
 - The default retrieval implementation uses deterministic token overlap for local demos. The data model and interfaces are pgvector-ready, but real vector search requires the PostgreSQL `vector` extension and embedding jobs.
+- Document upload currently supports text, Markdown, and safely stripped HTML. PDF parsing is modeled in the roadmap but not implemented in this slice.
 - Celery is configured and worker tasks are present, but the local vertical slice can process synchronously for easier demos.
 - AWS files are deployment scaffolding only. They require explicit operator review before provisioning paid resources.
 - Live OpenAI calls require `AI_PROVIDER=openai` and `OPENAI_API_KEY`; CI uses mocked responses.
+- Full `npm audit` still reports dev-tooling advisories in Vite/Tailwind that require forced major upgrades. `npm audit --omit=dev` is clean.
 
 See [architecture.md](/Users/pratham/Desktop/p/CSI_Platform/docs/architecture.md) and [implementation-plan.md](/Users/pratham/Desktop/p/CSI_Platform/docs/implementation-plan.md) for design details and milestones.

@@ -1,11 +1,24 @@
-from fastapi import APIRouter, HTTPException, Query, status
+import csv
+import io
+import json
+
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DbDep, PrincipalDep
 from app.models.enums import TicketStatus
 from app.models.ticket import Message, ResponseDraft, Ticket, TicketAssignment
 from app.schemas.common import Page
-from app.schemas.tickets import BulkTicketAction, TicketAction, TicketCreate, TicketDetail, TicketListItem, WebhookTicketCreate
+from app.models.enums import IngestionSource
+from app.schemas.tickets import (
+    BulkTicketAction,
+    TicketAction,
+    TicketCreate,
+    TicketDetail,
+    TicketImportResult,
+    TicketListItem,
+    WebhookTicketCreate,
+)
 from app.services.audit import record_audit
 from app.services.tickets import build_ticket_detail, create_ticket, list_tickets, process_ticket
 
@@ -36,6 +49,43 @@ def create(payload: TicketCreate, db: DbDep, principal: PrincipalDep) -> dict:
     process_ticket(db, principal, ticket)
     db.commit()
     return {"id": ticket.id}
+
+
+@router.post("/import", response_model=TicketImportResult, status_code=status.HTTP_207_MULTI_STATUS)
+def import_json(payload: list[dict], db: DbDep, principal: PrincipalDep) -> TicketImportResult:
+    created: list[str] = []
+    failed: list[dict] = []
+    for index, row in enumerate(payload):
+        try:
+            normalized = TicketCreate(**{**row, "source": IngestionSource.IMPORT})
+            ticket = create_ticket(db, principal, normalized)
+            process_ticket(db, principal, ticket)
+            created.append(ticket.id)
+        except Exception as exc:
+            failed.append({"index": index, "error": str(exc), "record": row})
+    db.commit()
+    return TicketImportResult(created=created, failed=failed)
+
+
+@router.post("/import-file", response_model=TicketImportResult, status_code=status.HTTP_207_MULTI_STATUS)
+async def import_file(
+    db: DbDep,
+    principal: PrincipalDep,
+    file: UploadFile = File(...),
+) -> TicketImportResult:
+    raw = await file.read()
+    if len(raw) > 2_000_000:
+        raise HTTPException(status_code=413, detail="Import file is too large")
+    suffix = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else ""
+    if suffix == "json":
+        records = json.loads(raw.decode("utf-8"))
+        if not isinstance(records, list):
+            raise HTTPException(status_code=422, detail="JSON import must be an array")
+    elif suffix == "csv":
+        records = list(csv.DictReader(io.StringIO(raw.decode("utf-8"))))
+    else:
+        raise HTTPException(status_code=415, detail="Only CSV and JSON imports are supported")
+    return import_json(records, db, principal)
 
 
 @router.post("/webhook", status_code=status.HTTP_202_ACCEPTED)

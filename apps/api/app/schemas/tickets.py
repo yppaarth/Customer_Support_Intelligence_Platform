@@ -105,3 +105,8 @@ class BulkTicketAction(BaseModel):
     ticket_ids: list[str] = Field(min_length=1, max_length=100)
     assigned_user_id: str | None = None
     status: TicketStatus | None = None
+
+
+class TicketImportResult(BaseModel):
+    created: list[str]
+    failed: list[dict]

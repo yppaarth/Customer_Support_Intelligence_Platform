@@ -1,6 +1,10 @@
 from fastapi.testclient import TestClient
 
+from app.db.session import SessionLocal
 from app.ai.evaluation.runner import run
+from app.models.enums import Role
+from app.models.organization import Organization, OrganizationMembership, User
+from app.security.auth import hash_password
 
 
 def test_login_and_list_tickets(client: TestClient, token: str) -> None:
@@ -41,6 +45,87 @@ def test_webhook_idempotency(client: TestClient, token: str) -> None:
     assert first.status_code == 202
     assert second.status_code == 202
     assert first.json()["id"] == second.json()["id"]
+
+
+def test_import_allows_partial_failures(client: TestClient, token: str) -> None:
+    res = client.post(
+        "/api/v1/tickets/import",
+        headers={"authorization": f"Bearer {token}"},
+        json=[
+            {
+                "subject": "Valid imported refund",
+                "customer_email": "import@example.test",
+                "message": "I want a refund for an unused item.",
+            },
+            {"subject": "bad"},
+        ],
+    )
+    assert res.status_code == 207, res.text
+    body = res.json()
+    assert len(body["created"]) == 1
+    assert len(body["failed"]) == 1
+
+
+def test_knowledge_upload_and_archive(client: TestClient, token: str) -> None:
+    upload = client.post(
+        "/api/v1/knowledge/upload",
+        headers={"authorization": f"Bearer {token}"},
+        data={"title": "Warranty policy"},
+        files={"file": ("warranty.md", b"Warranty claims require an order number and must be reviewed within 90 days.", "text/markdown")},
+    )
+    assert upload.status_code == 201, upload.text
+    doc_id = upload.json()["id"]
+    archive = client.post(f"/api/v1/knowledge/{doc_id}/archive", headers={"authorization": f"Bearer {token}"})
+    assert archive.status_code == 200
+
+
+def test_read_only_user_cannot_create_ticket(client: TestClient) -> None:
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "analyst@northstar.demo", "password": "ResolveIQDemo!23", "organization_slug": "northstar"},
+    )
+    token = login.json()["access_token"]
+    res = client.post(
+        "/api/v1/tickets",
+        headers={"authorization": f"Bearer {token}"},
+        json={
+            "subject": "Denied create",
+            "customer_email": "deny@example.test",
+            "message": "This should not be allowed.",
+        },
+    )
+    assert res.status_code == 403
+
+
+def test_tenant_isolation_blocks_cross_org_ticket(client: TestClient, token: str) -> None:
+    created = client.post(
+        "/api/v1/tickets",
+        headers={"authorization": f"Bearer {token}"},
+        json={
+            "subject": "Tenant scoped ticket",
+            "customer_email": "tenant@example.test",
+            "message": "I want a refund for an unused item.",
+        },
+    )
+    ticket_id = created.json()["id"]
+    db = SessionLocal()
+    try:
+        org = Organization(name="Southstar Commerce", slug="southstar")
+        db.add(org)
+        user = User(email="admin@southstar.demo", full_name="South Admin", password_hash=hash_password("ResolveIQDemo!23"))
+        db.add(user)
+        db.flush()
+        db.add(OrganizationMembership(organization_id=org.id, user_id=user.id, role=Role.ORG_ADMIN.value))
+        db.commit()
+    finally:
+        db.close()
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@southstar.demo", "password": "ResolveIQDemo!23", "organization_slug": "southstar"},
+    )
+    south_token = login.json()["access_token"]
+    denied = client.get(f"/api/v1/tickets/{ticket_id}", headers={"authorization": f"Bearer {south_token}"})
+    assert denied.status_code == 404
 
 
 def test_evaluation_runner_writes_actual_report(tmp_path) -> None:

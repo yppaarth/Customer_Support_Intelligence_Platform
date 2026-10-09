@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, ClipboardList, LogOut, ShieldAlert, Users, Wrench } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardList, FileClock, LogOut, Settings, ShieldAlert, Users, Wrench } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearToken } from "../lib/api";
 
@@ -8,7 +8,9 @@ const links = [
   { to: "/escalations", label: "Escalations", icon: ShieldAlert },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/evaluations", label: "Evaluations", icon: Wrench },
-  { to: "/users", label: "Users", icon: Users }
+  { to: "/users", label: "Users", icon: Users },
+  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/audit", label: "Audit", icon: FileClock }
 ];
 
 export function Layout() {

@@ -28,3 +28,19 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+export async function apiForm<T>(path: string, body: FormData): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    body,
+    headers: {
+      ...(token ? { authorization: `Bearer ${token}` } : {})
+    }
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(payload.detail ?? "Request failed");
+  }
+  return res.json() as Promise<T>;
+}

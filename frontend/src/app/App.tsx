@@ -2,11 +2,14 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { getToken } from "../lib/api";
 import { AnalyticsPage } from "../pages/AnalyticsPage";
+import { AuditPage } from "../pages/AuditPage";
 import { EscalationsPage } from "../pages/EscalationsPage";
 import { EvaluationsPage } from "../pages/EvaluationsPage";
 import { KnowledgePage } from "../pages/KnowledgePage";
 import { LoginPage } from "../pages/LoginPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { AccessDeniedPage } from "../pages/AccessDeniedPage";
+import { SettingsPage } from "../pages/SettingsPage";
 import { TicketDetailPage } from "../pages/TicketDetailPage";
 import { TicketsPage } from "../pages/TicketsPage";
 import { UsersPage } from "../pages/UsersPage";
@@ -28,6 +31,9 @@ export function App() {
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/evaluations" element={<EvaluationsPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/audit" element={<AuditPage />} />
+        <Route path="/access-denied" element={<AccessDeniedPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
