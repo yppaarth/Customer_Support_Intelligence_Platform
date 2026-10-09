@@ -33,6 +33,57 @@ def test_create_ticket_processes_draft(client: TestClient, token: str) -> None:
     assert detail.json()["latest_draft"]["citations"]
 
 
+def test_vertical_slice_auth_doc_ticket_retrieval_cited_draft_and_approval(
+    client: TestClient, token: str
+) -> None:
+    document = client.post(
+        "/api/v1/knowledge",
+        headers={"authorization": f"Bearer {token}"},
+        json={
+            "title": "Loyalty Credit Policy",
+            "content": (
+                "When a customer reports a sparklepack shipping delay, support agents may offer "
+                "a 15 USD loyalty credit after verifying the delayed order. This policy requires "
+                "human approval before the response is sent."
+            ),
+            "source_type": "markdown",
+        },
+    )
+    assert document.status_code == 201, document.text
+
+    created = client.post(
+        "/api/v1/tickets",
+        headers={"authorization": f"Bearer {token}"},
+        json={
+            "subject": "Sparklepack shipping delay",
+            "customer_email": "vertical.slice@example.test",
+            "customer_name": "Vertical Slice",
+            "message": "My sparklepack shipping delay has been going on for days. Can you help?",
+        },
+    )
+    assert created.status_code == 201, created.text
+    ticket_id = created.json()["id"]
+
+    detail = client.get(f"/api/v1/tickets/{ticket_id}", headers={"authorization": f"Bearer {token}"})
+    assert detail.status_code == 200
+    body = detail.json()
+    assert body["latest_draft"]["body"]
+    citation_titles = {citation["title"] for citation in body["latest_draft"]["citations"]}
+    assert "Loyalty Credit Policy" in citation_titles
+    assert body["status"] in {"waiting_for_human_review", "approved"}
+
+    approved = client.post(
+        f"/api/v1/tickets/{ticket_id}/approve",
+        headers={"authorization": f"Bearer {token}"},
+        json={"draft_body": body["latest_draft"]["body"] + "\n\nApproved by agent."},
+    )
+    assert approved.status_code == 200, approved.text
+
+    final = client.get(f"/api/v1/tickets/{ticket_id}", headers={"authorization": f"Bearer {token}"})
+    assert final.json()["status"] == "approved"
+    assert final.json()["latest_draft"]["status"] == "approved"
+
+
 def test_webhook_idempotency(client: TestClient, token: str) -> None:
     payload = {
         "subject": "Delayed order",

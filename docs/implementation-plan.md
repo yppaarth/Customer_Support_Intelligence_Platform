@@ -2,7 +2,22 @@
 
 ## Phase 1: Inspect And Plan
 
-The repository was empty except for `.git`, so ResolveIQ is initialized from scratch. The first vertical slice proves auth, tenant isolation, tickets, knowledge retrieval, AI draft generation, human review, analytics, and evaluation.
+The repository was empty except for `.git`, so ResolveIQ is initialized from scratch. The first priority is the narrow product vertical slice: authentication, document ingestion, ticket creation, tenant-scoped retrieval, cited draft generation, and human approval. Dashboards, analytics, evaluation views, and admin surfaces are useful only after this slice works end to end.
+
+## Vertical Slice First
+
+Complete and preserve this golden path before expanding breadth:
+
+1. A seeded user authenticates into a tenant.
+2. An admin or manager ingests a knowledge document.
+3. An agent creates a customer support ticket.
+4. The backend classifies the ticket and retrieves tenant-scoped evidence from the ingested document.
+5. The AI pipeline generates a draft with citations that map to retrieved chunks.
+6. The frontend shows the draft and exact sources.
+7. A human edits and approves the draft.
+8. The approved state, audit event, citations, and ticket status are persisted.
+
+The executable backend proof is `test_vertical_slice_auth_doc_ticket_retrieval_cited_draft_and_approval`.
 
 ## Phase 2: Foundation
 
@@ -33,7 +48,7 @@ Add CI, Dockerfiles, AWS Terraform skeleton, backup/restore notes, secrets guida
 
 ## Current Verification
 
-- Backend: `pytest` passes with 8 tests covering login, ticket processing, webhook idempotency, partial imports, knowledge upload/archive, read-only denial, tenant isolation, and evaluation report generation.
+- Backend: `pytest` passes with tests covering the vertical slice, login, ticket processing, webhook idempotency, partial imports, knowledge upload/archive, read-only denial, tenant isolation, and evaluation report generation.
 - Evaluation: deterministic synthetic suite generated `evaluation/reports/latest.json` with 105 cases and actual 85.7% classification/escalation accuracy.
 - Frontend: `npm run build` passes.
 - Production frontend audit: `npm audit --omit=dev` reports 0 vulnerabilities.
