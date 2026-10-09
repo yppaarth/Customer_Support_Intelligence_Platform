@@ -11,3 +11,9 @@ coverage/
 *.egg-info/
 evaluation/reports/*.json
 frontend/.vite/
+
+# Private interview preparation notes
+docs/interview-case-study.md
+docs/demo-script.md
+docs/interview-architecture-walkthrough.md
+docs/interview-questions.md

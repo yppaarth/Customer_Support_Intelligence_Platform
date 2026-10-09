@@ -1,8 +1,8 @@
 # ResolveIQ
 
-ResolveIQ is a production-oriented demo of an AI customer support intelligence platform for the fictional company Northstar Commerce. It is designed as a portfolio/interview project that demonstrates tenant isolation, RBAC, ticket workflows, RAG-style grounded drafts, controlled tools, escalation, evaluation, analytics, and deployment scaffolding.
+ResolveIQ is a production-oriented demo of an AI customer support intelligence platform for the fictional company Northstar Commerce. It is designed as a portfolio project that demonstrates tenant isolation, RBAC, ticket workflows, RAG-style grounded drafts, controlled tools, escalation, evaluation, analytics, and AWS-ready deployment scaffolding.
 
-This repository is not deployed and should not be described as production-ready. The default AI provider is a deterministic mock so the app can run without API credentials. Live OpenAI usage is behind configuration.
+Deployment status: this repository includes Docker and AWS infrastructure scaffolding, but it is not currently deployed to a live AWS account. The default AI provider is a deterministic mock so the app can run without API credentials. Live OpenAI usage is behind configuration.
 
 ```mermaid
 flowchart LR
@@ -91,6 +91,45 @@ npm audit --omit=dev
 ```
 
 Current result: `found 0 vulnerabilities`.
+
+## AWS Deployment Readiness
+
+ResolveIQ is structured for an AWS deployment path without provisioning paid resources automatically.
+
+Live AWS infrastructure is intentionally not kept running from this repository because ECS, RDS, ElastiCache, NAT, and CloudWatch resources can create recurring cost. The repo is prepared so an operator can deploy the stack, run smoke tests, and tear it down when finished.
+
+Target architecture:
+
+- ECS Fargate services for the FastAPI API, Celery worker, and frontend.
+- RDS PostgreSQL with pgvector for application data and vector retrieval.
+- ElastiCache Redis for Celery broker/result backend and cache use cases.
+- S3 for uploaded document storage in a production deployment.
+- CloudWatch for logs, metrics, and operational alarms.
+- AWS Secrets Manager or SSM Parameter Store for runtime secrets.
+
+Included deployment assets:
+
+- `docker-compose.yml` for local API, worker, frontend, Postgres/pgvector, and Redis.
+- `infrastructure/docker/api.Dockerfile` and `infrastructure/docker/frontend.Dockerfile`.
+- `infrastructure/aws/` Terraform scaffold.
+- `.env.example` with safe local defaults.
+- Alembic migration command wired into the API Docker startup path.
+
+Not claimed:
+
+- No live AWS endpoint is included in this repository.
+- No AWS resources are provisioned automatically.
+- No production traffic, customer deployment, uptime, SLA, or business-impact metrics are claimed.
+
+If this project is deployed later, update this section with verifiable deployment evidence:
+
+- Public app URL or internal load balancer URL.
+- AWS region and high-level account/environment name.
+- ECS service names and latest task revision.
+- RDS engine/version and migration timestamp.
+- CloudWatch log group names.
+- Smoke-test timestamp and results.
+- Terraform workspace/state location.
 
 ## Local Development Without Docker
 
