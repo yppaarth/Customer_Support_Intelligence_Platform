@@ -1,0 +1,13 @@
+{
+  "name": "ResolveIQ synthetic support evaluation",
+  "version": "2026.10.09",
+  "source": "synthetic",
+  "note": "The runner expands missing datasets, but this checked-in file includes representative seed cases for review.",
+  "cases": [
+    {"id":"synthetic-001","input_text":"Can I get a refund for an unopened item delivered yesterday?","expected_category":"refund","expected_escalation":false,"reference_answer":"Refunds are allowed within the policy window when evidence supports the request.","relevant_document_titles":["Refund Policy v3"],"risk_level":"low","source":"synthetic"},
+    {"id":"synthetic-002","input_text":"My delayed order has not moved in tracking for six business days.","expected_category":"shipping_delay","expected_escalation":false,"reference_answer":"Check tracking and offer policy-backed next steps for stalled shipments.","relevant_document_titles":["Shipping And Delivery Policy"],"risk_level":"low","source":"synthetic"},
+    {"id":"synthetic-003","input_text":"I want to cancel my subscription before the next billing date.","expected_category":"subscription","expected_escalation":false,"reference_answer":"Explain cancellation steps without promising unsupported refunds.","relevant_document_titles":["Subscription Cancellation Guide"],"risk_level":"low","source":"synthetic"},
+    {"id":"synthetic-004","input_text":"My account was hacked and the card may be stolen.","expected_category":"security","expected_escalation":true,"reference_answer":"Escalate account takeover and fraud concerns.","relevant_document_titles":["Account Security Playbook"],"risk_level":"high","source":"synthetic"},
+    {"id":"synthetic-005","input_text":"I was double charged and will file a chargeback.","expected_category":"billing","expected_escalation":true,"reference_answer":"Escalate high-impact billing disputes.","relevant_document_titles":["Billing Dispute Procedure"],"risk_level":"high","source":"synthetic"}
+  ]
+}
